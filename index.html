@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whispering Corridors</title>
+    <meta http-equiv="refresh" content="0; url=./prototype/index.html">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0a0a0f;
+            color: #c9a227;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 600px;
+            padding: 40px;
+        }
+        
+        h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 0 0 20px rgba(201, 162, 39, 0.5);
+        }
+        
+        .subtitle {
+            color: #8b00ff;
+            font-size: 18px;
+            margin-bottom: 40px;
+        }
+        
+        .loading {
+            font-size: 14px;
+            color: #5a5a62;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #3a3a42;
+            border-top-color: #c9a227;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .link {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 15px 30px;
+            background: #2a2a3a;
+            border: 2px solid #c9a227;
+            color: #c9a227;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+        
+        .link:hover {
+            background: #c9a227;
+            color: #0a0a0f;
+            box-shadow: 0 0 30px rgba(201, 162, 39, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Whispering Corridors</h1>
+        <p class="subtitle">Un boomer shooter lovecraftiano</p>
+        
+        <p class="loading">
+            <span class="spinner"></span>
+            Cargando prototipo...
+        </p>
+        
+        <p style="margin-top: 20px; font-size: 12px; color: #3a3a42;">
+            Si no redirige automáticamente:
+        </p>
+        
+        <a href="./prototype/index.html" class="link">Jugar Prototipo</a>
+    </div>
+    
+    <script>
+        // Redirección inmediata
+        window.location.href = './prototype/index.html';
+    </script>
+</body>
+</html>
