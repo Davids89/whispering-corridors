@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Whispering Corridors</title>
-    <meta http-equiv="refresh" content="0; url=./prototype/index.html">
+    <title>Whispering Corridors — Godot 4</title>
     <style>
         * {
             margin: 0;
@@ -24,13 +23,13 @@
         }
         
         .container {
-            max-width: 600px;
+            max-width: 700px;
             padding: 40px;
         }
         
         h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: 42px;
+            margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 4px;
             text-shadow: 0 0 20px rgba(201, 162, 39, 0.5);
@@ -39,47 +38,100 @@
         .subtitle {
             color: #8b00ff;
             font-size: 18px;
+            margin-bottom: 30px;
+        }
+        
+        .engine-badge {
+            display: inline-block;
+            background: #2a2a3a;
+            border: 2px solid #478cbf;
+            color: #478cbf;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        
+        .description {
+            color: #8a8a92;
+            font-size: 14px;
+            line-height: 1.6;
             margin-bottom: 40px;
         }
         
-        .loading {
-            font-size: 14px;
-            color: #5a5a62;
+        .features {
+            text-align: left;
+            background: #0d0d12;
+            border: 1px solid #2a2a3a;
+            padding: 20px;
+            margin-bottom: 30px;
         }
         
-        .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #3a3a42;
-            border-top-color: #c9a227;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-            vertical-align: middle;
+        .features h3 {
+            color: #c9a227;
+            margin-bottom: 15px;
+            font-size: 16px;
         }
         
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .features ul {
+            list-style: none;
+            color: #6a6a72;
+            font-size: 13px;
+        }
+        
+        .features li {
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .features li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #8b00ff;
+        }
+        
+        .links {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
         }
         
         .link {
             display: inline-block;
-            margin-top: 30px;
-            padding: 15px 30px;
+            padding: 12px 24px;
             background: #2a2a3a;
             border: 2px solid #c9a227;
             color: #c9a227;
             text-decoration: none;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
+            font-size: 12px;
             transition: all 0.3s;
         }
         
         .link:hover {
             background: #c9a227;
             color: #0a0a0f;
-            box-shadow: 0 0 30px rgba(201, 162, 39, 0.5);
+            box-shadow: 0 0 20px rgba(201, 162, 39, 0.5);
+        }
+        
+        .link.secondary {
+            border-color: #478cbf;
+            color: #478cbf;
+        }
+        
+        .link.secondary:hover {
+            background: #478cbf;
+            color: #0a0a0f;
+        }
+        
+        .note {
+            margin-top: 30px;
+            font-size: 11px;
+            color: #4a4a52;
         }
     </style>
 </head>
@@ -88,21 +140,40 @@
         <h1>Whispering Corridors</h1>
         <p class="subtitle">Un boomer shooter lovecraftiano</p>
         
-        <p class="loading">
-            <span class="spinner"></span>
-            Cargando prototipo...
+        <div class="engine-badge">🎮 Godot 4 — Vertical Slice</div>
+        
+        <p class="description">
+            Encarna a un Inquisidor del Vacío en este shooter de acción frenética 
+            ambientado en un universo de horror cósmico. Explora El Asilo, 
+            enfrenta cultistas corruptos y sobrevive a los susurros del vacío.
         </p>
         
-        <p style="margin-top: 20px; font-size: 12px; color: #3a3a42;">
-            Si no redirige automáticamente:
-        </p>
+        <div class="features">
+            <h3>Características del Vertical Slice</h3>
+            <ul>
+                <li>3 armas únicas con estadísticas diferentes</li>
+                <li>3 tipos de enemigos con IA distintiva</li>
+                <li>Nivel completo: El Asilo (6 salas)</li>
+                <li>Boss final: El Guardián del Asilo</li>
+                <li>Renderizado raycasting estilo Wolfenstein 3D</li>
+                <li>Sistema de salud, armadura y munición</li>
+                <li>Meta-progresión con Almas del Vacío</li>
+            </ul>
+        </div>
         
-        <a href="./prototype/index.html" class="link">Jugar Prototipo</a>
+        <div class="links">
+            <a href="https://github.com/Davids89/whispering-corridors" class="link" target="_blank">
+                📁 Ver en GitHub
+            </a>
+            <a href="./prototype/index.html" class="link secondary">
+                🕹️ Prototipo HTML5
+            </a>
+        </div>
+        
+        <p class="note">
+            Para ejecutar el proyecto Godot: clona el repo, abre Godot 4.2+, 
+            importa godot/project.godot y presiona F5
+        </p>
     </div>
-    
-    <script>
-        // Redirección inmediata
-        window.location.href = './prototype/index.html';
-    </script>
 </body>
 </html>

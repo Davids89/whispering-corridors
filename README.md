@@ -2,76 +2,97 @@
 
 Un **boomer shooter lovecraftiano** con elementos roguelike, inspirado en H.P. Lovecraft y Warhammer 40K: Boltgun.
 
-![Estado](https://img.shields.io/badge/estado-prototipo-orange)
-![Engine](https://img.shields.io/badge/engine-HTML5%20Canvas-blue)
+![Estado](https://img.shields.io/badge/estado-vertical%20slice-orange)
+![Engine](https://img.shields.io/badge/engine-Godot%204.2-blue)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 
-## 🎮 Demo Jugable
+## 🎮 Proyecto Godot 4
 
-**[▶️ Jugar Prototipo](https://davids89.github.io/whispering-corridors/prototype/index.html)**
+Este repositorio contiene el **vertical slice** de Whispering Corridors desarrollado en **Godot 4**.
 
-Controles:
-- `WASD` — Movimiento
-- `Ratón` — Mirar
-- `Click` — Disparar
-- `1-4` — Cambiar arma
-- `R` — Recargar
+### Características del Vertical Slice
 
-## 📖 Sobre el Proyecto
-
-**Whispering Corridors** es un shooter de acción frenética ambientado en un universo de horror cósmico. Encarnas a un **Inquisidor del Vacío**, cazando cultistas en instalaciones poseídas por entidades dimensionales.
-
-### Características
-
-- 🔫 **8 armas únicas** — desde la Pistola del Culto hasta La Última Palabra
-- 👹 **8+ tipos de enemigos** — cultistas, híbridos, horrores dimensionales
-- 🎲 **Sistema roguelike** — runs procedurales, muerte permanente, meta-progresión
-- 🏚️ **3 zonas temáticas** — El Asilo, La Instalación, El Umbral
-- 🎨 **Estética retro** — pixel art, paleta lovecraftiana, renderizado raycasting
+- 🔫 **3 armas** — Pistola del Culto, Escopeta Ritual, Ametralladora
+- 👹 **3 enemigos** — Cultista, Flagelante, Portador de Vela
+- 🏚️ **1 zona completa** — El Asilo (6 salas + boss)
+- 👑 **1 boss** — El Guardián del Asilo (2 fases)
+- 🎨 **Renderizado raycasting** — Estilo Wolfenstein 3D
 
 ## 📁 Estructura del Proyecto
 
 ```
 whispering-corridors/
-├── prototype/           # Prototipo jugable HTML5
-│   └── index.html      # Demo raycasting
-├── src/
-│   ├── weapons/        # Sistema de armas
-│   │   └── weapons.js
-│   └── enemies/        # Sistema de enemigos e IA
-│       └── enemies.js
-├── docs/               # Documentación de diseño
-│   ├── GDD.md          # Game Design Document
-│   ├── roguelike-system.md
-│   ├── level-generation.md
-│   ├── engine-decision.md
-│   └── audio-design.md
-├── design/             # Diseño de niveles y UI
-│   ├── level-01.md     # El Asilo
-│   └── ui-design.md
-└── assets/             # Sprites y recursos
-    └── sprites/
-        └── prototypes/ # Prototipos animados
+├── godot/                    # Proyecto Godot 4
+│   ├── project.godot        # Configuración del proyecto
+│   ├── icon.svg             # Icono del juego
+│   ├── scenes/              # Escenas
+│   │   ├── main/           # Escena principal
+│   │   ├── player/         # Jugador
+│   │   ├── enemies/        # Enemigos
+│   │   ├── weapons/        # Armas
+│   │   ├── levels/         # Niveles
+│   │   ├── ui/             # Interfaz
+│   │   └── effects/        # Efectos
+│   ├── scripts/             # Scripts GDScript
+│   │   ├── autoload/       # Singletons (GameManager, etc.)
+│   │   ├── components/     # Componentes reutilizables
+│   │   └── systems/        # Sistemas del juego
+│   ├── assets/              # Recursos
+│   │   ├── sprites/        # Sprites y texturas
+│   │   ├── audio/          # Música y SFX
+│   │   ├── fonts/          # Fuentes
+│   │   └── shaders/        # Shaders personalizados
+│   └── resources/           # Recursos de Godot
+│       ├── tilesets/       # Tilesets para niveles
+│       └── themes/         # Temas de UI
+├── docs/                    # Documentación de diseño
+│   ├── GDD.md              # Game Design Document
+│   ├── roguelike-system.md # Sistema roguelike
+│   ├── level-generation.md # Generación procedural
+│   ├── engine-decision.md  # Decisión de motor
+│   └── audio-design.md     # Diseño de audio
+├── design/                  # Diseño de niveles y UI
+│   ├── level-01.md         # El Asilo
+│   └── ui-design.md        # Diseño de interfaz
+└── prototype/               # Prototipo HTML5 (legacy)
+    └── index.html          # Demo raycasting original
 ```
 
-## 🎯 Roadmap
+## 🚀 Cómo Ejecutar
 
-- [x] Documentación de diseño completa
-- [x] Prototipo de renderizado raycasting
-- [x] Sistemas de armas y enemigos (código)
-- [x] Diseño de nivel 1
-- [ ] Implementación en Godot 4
-- [ ] Sprites finales
-- [ ] Audio y música
-- [ ] Vertical slice jugable
-- [ ] Early Access
+### Requisitos
+- **Godot 4.2+** (descargar de https://godotengine.org/download)
 
-## 🛠️ Tecnologías
+### Pasos
+1. Clonar el repositorio:
+   ```bash
+   git clone https://github.com/Davids89/whispering-corridors.git
+   cd whispering-corridors
+   ```
 
-- **Prototipo**: HTML5 Canvas, JavaScript vanilla
-- **Engine objetivo**: Godot 4.x
-- **Arte**: Pixel art, Aseprite
-- **Audio**: Dark ambient, industrial
+2. Abrir Godot 4
+
+3. Importar proyecto:
+   - Click en "Import"
+   - Seleccionar `godot/project.godot`
+   - Click "Import & Edit"
+
+4. Ejecutar:
+   - Presiona `F5` o click en el botón Play
+   - La escena principal es `scenes/main/Main.tscn`
+
+## 🎯 Controles
+
+| Tecla | Acción |
+|-------|--------|
+| `WASD` | Movimiento |
+| `Ratón` | Mirar |
+| `Click` | Disparar |
+| `R` | Recargar |
+| `1-3` | Cambiar arma |
+| `E` | Interactuar |
+| `ESC` | Pausa / Liberar mouse |
+| `F3` | Debug info |
 
 ## 📚 Documentación
 
@@ -80,6 +101,29 @@ whispering-corridors/
 - [Generación Procedural](docs/level-generation.md)
 - [Diseño de Audio](docs/audio-design.md)
 - [Diseño de UI](design/ui-design.md)
+- [Nivel 1: El Asilo](design/level-01.md)
+
+## 🗺️ Roadmap
+
+- [x] Documentación de diseño completa
+- [x] Prototipo HTML5 (validación de concepto)
+- [x] Setup Godot 4
+- [ ] Sistema de renderizado raycasting
+- [ ] Controlador de jugador
+- [ ] Sistema de armas (3 armas)
+- [ ] Sistema de enemigos (3 enemigos + IA)
+- [ ] Nivel 1: El Asilo
+- [ ] Boss: El Guardián del Asilo
+- [ ] Sistema de UI/HUD
+- [ ] Vertical slice completo
+
+## 🛠️ Tecnologías
+
+- **Engine**: Godot 4.2+
+- **Lenguaje**: GDScript
+- **Arte**: Pixel art, Aseprite
+- **Audio**: Dark ambient, industrial
+- **Control de versiones**: Git
 
 ## 🤝 Contribuir
 
