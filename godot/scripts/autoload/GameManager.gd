@@ -31,8 +31,8 @@ var player_souls: int = 0
 
 # Meta-progresión (persiste entre runs)
 var total_souls: int = 0
-var unlocked_weapons: Array[String] = ["pistola"]
-var unlocked_powerups: Array[String] = []
+var unlocked_weapons: Array = ["pistola"]
+var unlocked_powerups: Array = []
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS

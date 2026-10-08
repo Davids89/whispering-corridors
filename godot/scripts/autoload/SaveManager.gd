@@ -79,8 +79,8 @@ func _apply_loaded_data() -> void:
 	"""Aplica los datos cargados a los managers"""
 	# Meta-progresión
 	GameManager.total_souls = save_data.get("total_souls", 0)
-	GameManager.unlocked_weapons = save_data.get("unlocked_weapons", ["pistola"])
-	GameManager.unlocked_powerups = save_data.get("unlocked_powerups", [])
+	GameManager.unlocked_weapons.assign(save_data.get("unlocked_weapons", ["pistola"]))
+	GameManager.unlocked_powerups.assign(save_data.get("unlocked_powerups", []))
 	
 	# Configuración
 	var settings = save_data.get("settings", {})
