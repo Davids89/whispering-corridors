@@ -33,6 +33,9 @@ func _ready() -> void:
 		print("InputManager conectado")
 	else:
 		push_warning("InputManager no encontrado")
+	
+	# Cargar nivel de prueba
+	_load_test_level()
 
 func _process(_delta: float) -> void:
 	if debug_mode:
@@ -44,6 +47,22 @@ func _input(event: InputEvent) -> void:
 		debug_mode = !debug_mode
 		debug_info.visible = debug_mode
 		print("Debug mode: ", debug_mode)
+
+func _load_test_level() -> void:
+	"""Carga el nivel de prueba con raycasting"""
+	print("Cargando nivel de prueba...")
+	
+	var level_scene = load("res://scenes/levels/TestLevel.tscn")
+	if level_scene:
+		current_level = level_scene.instantiate()
+		world.add_child(current_level)
+		
+		if has_node("/root/GameManager"):
+			GameManager.current_level = "TestLevel"
+		
+		print("Nivel de prueba cargado")
+	else:
+		push_error("No se pudo cargar el nivel de prueba")
 
 func _update_debug_info() -> void:
 	"""Actualiza la información de debug"""

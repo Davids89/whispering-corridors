@@ -20,34 +20,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="CenterContainer" type="CenterContainer" parent="UI/HUD"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="TitleLabel" type="Label" parent="UI/HUD/CenterContainer"]
-theme_override_colors/font_color = Color(0.79, 0.64, 0.15, 1)
-theme_override_font_sizes/font_size = 32
-text = "WHISPERING CORRIDORS"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="SubtitleLabel" type="Label" parent="UI/HUD/CenterContainer"]
-offset_top = 50.0
-theme_override_colors/font_color = Color(0.54, 0, 1, 1)
-theme_override_font_sizes/font_size = 16
-text = "Proyecto Godot 4 — Vertical Slice"
-horizontal_alignment = 1
-
-[node name="InfoLabel" type="Label" parent="UI/HUD/CenterContainer"]
-offset_top = 100.0
-theme_override_colors/font_color = Color(0.6, 0.6, 0.66, 1)
-theme_override_font_sizes/font_size = 12
-text = "Presiona F3 para debug | ESC para liberar mouse"
-horizontal_alignment = 1
-
 [node name="DebugInfo" type="Label" parent="UI/HUD"]
 visible = false
 offset_left = 10.0
@@ -57,3 +29,12 @@ offset_bottom = 100.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 12
 text = "Debug Info"
+
+[node name="ControlsLabel" type="Label" parent="UI/HUD"]
+offset_left = 10.0
+offset_top = 330.0
+offset_right = 300.0
+offset_bottom = 360.0
+theme_override_colors/font_color = Color(0.6, 0.6, 0.66, 1)
+theme_override_font_sizes/font_size = 11
+text = "WASD: Mover | Mouse: Mirar | ESC: Liberar mouse | F3: Debug"
