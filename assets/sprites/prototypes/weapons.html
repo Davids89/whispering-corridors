@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprite Prototype — Armas</title>
+    <style>
+        body {
+            background: #1a1a22;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: monospace;
+            color: #c9a227;
+        }
+        .container {
+            text-align: center;
+        }
+        canvas {
+            border: 2px solid #4a4a52;
+            image-rendering: pixelated;
+            background: #0a0a0f;
+        }
+        .info {
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .controls {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #5a5a62;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>ARMAS — Vista Primera Persona</h2>
+        <canvas id="weaponCanvas" width="512" height="256"></canvas>
+        <div class="info">
+            <strong>Armas:</strong> Pistola → Escopeta → Ametralladora → Lanzallamas<br>
+            <strong>Animación:</strong> Idle sway + Disparo + Recarga<br>
+            <strong>Estilo:</strong> Boltgun — pesadas, industriales, rituales
+        </div>
+        <div class="controls">
+            Click para cambiar arma | ESPACIO para disparar | R para recargar
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('weaponCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Configuración
+        const SCALE = 4;
+        const FPS = 60;
+        
+        // Estado
+        let currentWeapon = 0;
+        let isShooting = false;
+        let isReloading = false;
+        let shootFrame = 0;
+        let reloadFrame = 0;
+        let swayTime = 0;
+        
+        // Armas
+        const WEAPONS = [
+            {
+                name: 'Pistola del Culto',
+                color: '#4a4a4a',
+                accent: '#6a6a6a',
+                muzzleFlash: '#ffff00',
+                length: 20,
+                width: 6,
+                fireRate: 20
+            },
+            {
+                name: 'Escopeta Ritual',
+                color: '#5a4a3a',
+                accent: '#8b6914',
+                muzzleFlash: '#ff8800',
+                length: 32,
+                width: 10,
+                fireRate: 40
+            },
+            {
+                name: 'Ametralladora de Guerra',
+                color: '#3a3a4a',
+                accent: '#5a5a6a',
+                muzzleFlash: '#ff4400',
+                length: 28,
+                width: 8,
+                fireRate: 5
+            },
+            {
+                name: 'Lanzallamas Sagrado',
+                color: '#4a3a2a',
+                accent: '#8b4513',
+                muzzleFlash: '#ff6600',
+                length: 36,
+                width: 12,
+                fireRate: 8
+            }
+        ];
+        
+        function drawWeapon(weapon, x, y, swayX, swayY, shootAnim, reloadAnim) {
+            const px = (dx, dy, color) => {
+                ctx.fillStyle = color;
+                ctx.fillRect(x + dx * SCALE + swayX, y + dy * SCALE + swayY, SCALE, SCALE);
+            };
+            
+            // Cañón principal
+            for (let i = 0; i < weapon.length; i++) {
+                for (let j = 0; j < weapon.width; j++) {
+                    let color = weapon.color;
+                    
+                    // Detalles
+                    if (j === 0 || j === weapon.width - 1) color = weapon.accent;
+                    if (i % 8 === 0) color = weapon.accent;
+                    
+                    // Efecto de disparo
+                    if (shootAnim > 0 && i > weapon.length - 5) {
+                        const flash = Math.random() > 0.5;
+                        if (flash) color = weapon.muzzleFlash;
+                    }
+                    
+                    px(i, j + 20, color);
+                }
+            }
+            
+            // Empuñadura
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 12; j++) {
+                    px(i + 4, j + 30, '#3a2a1a');
+                }
+            }
+            
+            // Gatillo
+            px(10, 32, '#2a2a2a');
+            px(11, 33, '#2a2a2a');
+            
+            // Mira
+            px(weapon.length - 4, 18, weapon.accent);
+            px(weapon.length - 3, 18, weapon.accent);
+            
+            // Muzzle flash
+            if (shootAnim > 0) {
+                const flashSize = shootAnim * 2;
+                for (let i = 0; i < flashSize; i++) {
+                    for (let j = 0; j < flashSize; j++) {
+                        if (Math.random() > 0.3) {
+                            const fx = weapon.length + i - flashSize/2;
+                            const fy = 20 + weapon.width/2 + j - flashSize/2;
+                            const alpha = shootAnim / 10;
+                            ctx.fillStyle = `rgba(255, 200, 100, ${alpha})`;
+                            ctx.fillRect(x + fx * SCALE + swayX, y + fy * SCALE + swayY, SCALE, SCALE);
+                        }
+                    }
+                }
+            }
+            
+            // Animación de recarga
+            if (reloadAnim > 0) {
+                // Cargador que baja
+                const drop = reloadAnim * 2;
+                for (let i = 0; i < 6; i++) {
+                    for (let j = 0; j < 8; j++) {
+                        px(i + 6, j + 42 + drop, '#4a4a4a');
+                    }
+                }
+            }
+        }
+        
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const weapon = WEAPONS[currentWeapon];
+            
+            // Idle sway
+            swayTime += 0.05;
+            const swayX = Math.sin(swayTime) * 2;
+            const swayY = Math.cos(swayTime * 0.7) * 1.5;
+            
+            // Actualizar animaciones
+            if (isShooting) {
+                shootFrame++;
+                if (shootFrame > 10) {
+                    isShooting = false;
+                    shootFrame = 0;
+                }
+            }
+            
+            if (isReloading) {
+                reloadFrame++;
+                if (reloadFrame > 20) {
+                    isReloading = false;
+                    reloadFrame = 0;
+                }
+            }
+            
+            // Dibujar arma
+            drawWeapon(
+                weapon,
+                200, 100,
+                swayX, swayY,
+                isShooting ? shootFrame : 0,
+                isReloading ? reloadFrame : 0
+            );
+            
+            // Info
+            ctx.fillStyle = '#c9a227';
+            ctx.font = '16px monospace';
+            ctx.fillText(weapon.name, 10, 30);
+            ctx.font = '12px monospace';
+            ctx.fillStyle = '#5a5a62';
+            ctx.fillText(`Cadencia: ${weapon.fireRate}ms`, 10, 50);
+            ctx.fillText(`Estado: ${isShooting ? 'DISPARANDO' : isReloading ? 'RECARGANDO' : 'LISTO'}`, 10, 70);
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Controles
+        canvas.addEventListener('click', () => {
+            currentWeapon = (currentWeapon + 1) % WEAPONS.length;
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                isShooting = true;
+                shootFrame = 0;
+            }
+            if (e.code === 'KeyR') {
+                isReloading = true;
+                reloadFrame = 0;
+            }
+        });
+        
+        // Iniciar
+        animate();
+    </script>
+</body>
+</html>

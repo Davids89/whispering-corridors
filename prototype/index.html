@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boomer Shooter — Prototipo Raycasting</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0a0a0f;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            position: relative;
+            border: 2px solid #2a2a3a;
+            box-shadow: 0 0 40px rgba(100, 50, 200, 0.3);
+        }
+        
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        
+        #hud {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.9));
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 10px 20px;
+            color: #c9a227;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .hud-section {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .health { color: #8b0000; font-size: 24px; font-weight: bold; }
+        .armor { color: #4a4a6a; font-size: 18px; }
+        .ammo { color: #c9a227; font-size: 24px; font-weight: bold; }
+        .weapon { color: #7a7a8a; font-size: 12px; }
+        
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+        }
+        
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background: #c9a227;
+        }
+        
+        #crosshair::before {
+            width: 2px;
+            height: 20px;
+            left: 9px;
+            top: 0;
+        }
+        
+        #crosshair::after {
+            width: 20px;
+            height: 2px;
+            left: 0;
+            top: 9px;
+        }
+        
+        #instructions {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #5a5a6a;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        
+        .key {
+            display: inline-block;
+            padding: 2px 6px;
+            background: #1a1a2a;
+            border: 1px solid #3a3a4a;
+            border-radius: 3px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="640" height="400"></canvas>
+        <div id="crosshair"></div>
+        <div id="hud">
+            <div class="hud-section">
+                <div class="health" id="health">100</div>
+                <div class="armor" id="armor">ARMOR: 50</div>
+            </div>
+            <div class="hud-section" style="text-align: center;">
+                <div class="weapon" id="weaponName">PISTOLA DEL CULTO</div>
+                <div style="color: #5a5a6a; font-size: 10px;">ZONA: ASILO</div>
+            </div>
+            <div class="hud-section" style="text-align: right;">
+                <div class="ammo" id="ammo">12 / ∞</div>
+                <div style="color: #5a5a6a; font-size: 10px;">ALMAS: 0</div>
+            </div>
+        </div>
+        <div id="instructions">
+            <span class="key">WASD</span> Mover &nbsp;
+            <span class="key">RATÓN</span> Mirar &nbsp;
+            <span class="key">CLICK</span> Disparar<br>
+            <span class="key">1-4</span> Cambiar arma &nbsp;
+            <span class="key">R</span> Recargar &nbsp;
+            <span class="key">ESC</span> Menú
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // BOOMER SHOOTER — PROTOTIPO RAYCASTING
+        // Estilo: Wolfenstein 3D + Lovecraft + Boltgun
+        // ============================================
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Configuración de renderizado retro
+        const SCREEN_WIDTH = 320;
+        const SCREEN_HEIGHT = 200;
+        const SCALE = 2; // 640x400 display
+        
+        // Buffer de renderizado a baja resolución
+        const renderBuffer = document.createElement('canvas');
+        renderBuffer.width = SCREEN_WIDTH;
+        renderBuffer.height = SCREEN_HEIGHT;
+        const rctx = renderBuffer.getContext('2d');
+        
+        // ============================================
+        // MAPA DEL NIVEL — ASILO/CULTO
+        // ============================================
+        
+        const MAP_WIDTH = 24;
+        const MAP_HEIGHT = 24;
+        
+        // 0 = vacío, 1-4 = tipos de pared
+        const worldMap = [
+            [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+            [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+            [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+            [2,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,2],
+            [2,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,2],
+            [2,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,2],
+            [2,0,0,0,0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,0,0,2],
+            [2,0,0,0,0,0,0,0,3,0,0,0,0,0,0,3,0,0,0,0,0,0,0,2],
+            [2,0,0,0,0,0,0,0,3,0,0,0,0,0,0,3,0,0,0,0,0,0,0,2],
+            [2,0,0,0,0,0,0,0,3,0,0,4,4,0,0,3,0,0,0,0,0,0,0,2],
+            [2,0,0,0,0,0,0,0,3,0,0,4,4,0,0,3,0,0,0,0,0,0,0,2],
+            [2,0,0,0,0,0,0,0,3,0,0,0,0,0,0,3,0,0,0,0,0,0,0,2],
+            [2,0,0,0,0,0,0,0,3,0,0,0,0,0,0,3,0,0,0,0,0,0,0,2],
+            [2,0,0,0,0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,0,0,2],
+            [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+            [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+            [2,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,2],
+            [2,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,2],
+            [2,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,2],
+            [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+            [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+            [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+            [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+            [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+        ];
+        
+        // ============================================
+        // JUGADOR
+        // ============================================
+        
+        const player = {
+            x: 12.0,
+            y: 12.0,
+            dirX: -1.0,
+            dirY: 0.0,
+            planeX: 0.0,
+            planeY: 0.66,
+            moveSpeed: 0.05,
+            rotSpeed: 0.03,
+            health: 100,
+            armor: 50,
+            ammo: 12,
+            weapon: 0
+        };
+        
+        // Armas disponibles
+        const weapons = [
+            { name: "PISTOLA DEL CULTO", damage: 15, rate: 300, ammo: "∞", spread: 0.02 },
+            { name: "ESCOPETA RITUAL", damage: 60, rate: 800, ammo: 8, spread: 0.15 },
+            { name: "AMETRALLADORA DE GUERRA", damage: 10, rate: 80, ammo: 100, spread: 0.08 },
+            { name: "LANZALLAMAS SAGRADO", damage: 100, rate: 1200, ammo: 4, spread: 0.05 }
+        ];
+        
+        // ============================================
+        // TEXTURAS (procedurales para prototipo)
+        // ============================================
+        
+        const TEX_WIDTH = 64;
+        const TEX_HEIGHT = 64;
+        
+        // Generar texturas procedurales
+        function generateTextures() {
+            const textures = [];
+            
+            // Textura 1: Piedra del asilo (gris oscuro)
+            textures[1] = [];
+            for (let y = 0; y < TEX_HEIGHT; y++) {
+                textures[1][y] = [];
+                for (let x = 0; x < TEX_WIDTH; x++) {
+                    const noise = Math.random() * 30 - 15;
+                    const base = 60 + noise;
+                    const mortar = (x % 16 < 2 || y % 16 < 2) ? 20 : 0;
+                    textures[1][y][x] = [
+                        Math.max(0, base - mortar),
+                        Math.max(0, base - mortar - 5),
+                        Math.max(0, base - mortar + 10)
+                    ];
+                }
+            }
+            
+            // Textura 2: Ladrillo rojo oscuro
+            textures[2] = [];
+            for (let y = 0; y < TEX_HEIGHT; y++) {
+                textures[2][y] = [];
+                for (let x = 0; x < TEX_WIDTH; x++) {
+                    const brickY = Math.floor(y / 8);
+                    const offset = (brickY % 2) * 8;
+                    const brickX = (x + offset) % 16;
+                    const isMortar = brickX < 2 || y % 8 < 2;
+                    const noise = Math.random() * 20 - 10;
+                    textures[2][y][x] = isMortar 
+                        ? [40 + noise, 35 + noise, 30 + noise]
+                        : [80 + noise, 40 + noise, 30 + noise];
+                }
+            }
+            
+            // Textura 3: Metal oxidado (tecnología arcana)
+            textures[3] = [];
+            for (let y = 0; y < TEX_HEIGHT; y++) {
+                textures[3][y] = [];
+                for (let x = 0; x < TEX_WIDTH; x++) {
+                    const rust = Math.sin(x * 0.3) * Math.cos(y * 0.2) * 20;
+                    const base = 50 + rust + Math.random() * 15;
+                    textures[3][y][x] = [
+                        Math.max(0, base + 20),
+                        Math.max(0, base),
+                        Math.max(0, base - 10)
+                    ];
+                }
+            }
+            
+            // Textura 4: Energía warp (verde espectral)
+            textures[4] = [];
+            for (let y = 0; y < TEX_HEIGHT; y++) {
+                textures[4][y] = [];
+                for (let x = 0; x < TEX_WIDTH; x++) {
+                    const pulse = Math.sin((x + y) * 0.5) * 30;
+                    const center = Math.abs(x - 32) + Math.abs(y - 32);
+                    const glow = Math.max(0, 100 - center * 2);
+                    textures[4][y][x] = [
+                        Math.max(0, 20 + pulse * 0.3),
+                        Math.max(0, 60 + glow + pulse),
+                        Math.max(0, 40 + pulse * 0.5)
+                    ];
+                }
+            }
+            
+            return textures;
+        }
+        
+        const textures = generateTextures();
+        
+        // ============================================
+        // SPRITES (enemigos y objetos)
+        // ============================================
+        
+        const sprites = [
+            // Cultista básico
+            { x: 8.5, y: 8.5, texture: 0, type: 'enemy', health: 30 },
+            { x: 18.5, y: 8.5, texture: 0, type: 'enemy', health: 30 },
+            { x: 8.5, y: 18.5, texture: 0, type: 'enemy', health: 30 },
+            // Objeto: altar
+            { x: 12.5, y: 6.5, texture: 1, type: 'object' },
+            // Objeto: columna
+            { x: 6.5, y: 12.5, texture: 2, type: 'object' },
+            { x: 17.5, y: 12.5, texture: 2, type: 'object' },
+        ];
+        
+        // Generar sprites procedurales
+        function generateSpriteTextures() {
+            const spriteTextures = [];
+            
+            // Sprite 0: Cultista (humanoide con túnica)
+            spriteTextures[0] = [];
+            for (let y = 0; y < TEX_HEIGHT; y++) {
+                spriteTextures[0][y] = [];
+                for (let x = 0; x < TEX_WIDTH; x++) {
+                    const centerX = 32;
+                    const dist = Math.abs(x - centerX);
+                    
+                    // Túnica púrpura oscuro
+                    if (y > 20 && y < 55 && dist < 12 - (y - 20) * 0.2) {
+                        const shade = 40 + Math.random() * 20;
+                        spriteTextures[0][y][x] = [shade, shade * 0.5, shade * 0.8, 255];
+                    }
+                    // Cabeza/capucha
+                    else if (y >= 10 && y <= 20 && dist < 8) {
+                        const shade = 50 + Math.random() * 15;
+                        spriteTextures[0][y][x] = [shade, shade * 0.4, shade * 0.6, 255];
+                    }
+                    // Ojos brillantes (verde espectral)
+                    else if (y >= 14 && y <= 16 && (dist === 3 || dist === 4)) {
+                        spriteTextures[0][y][x] = [100, 255, 150, 255];
+                    }
+                    // Transparente
+                    else {
+                        spriteTextures[0][y][x] = [0, 0, 0, 0];
+                    }
+                }
+            }
+            
+            // Sprite 1: Altar (estructura de piedra con símbolo)
+            spriteTextures[1] = [];
+            for (let y = 0; y < TEX_HEIGHT; y++) {
+                spriteTextures[1][y] = [];
+                for (let x = 0; x < TEX_WIDTH; x++) {
+                    const centerX = 32;
+                    const dist = Math.abs(x - centerX);
+                    
+                    // Base de piedra
+                    if (y > 40 && y < 60 && dist < 20) {
+                        const shade = 60 + Math.random() * 20;
+                        spriteTextures[1][y][x] = [shade, shade, shade + 10, 255];
+                    }
+                    // Columna
+                    else if (y >= 20 && y <= 40 && dist < 8) {
+                        const shade = 70 + Math.random() * 15;
+                        spriteTextures[1][y][x] = [shade, shade, shade + 5, 255];
+                    }
+                    // Símbolo brillante (ojo de Cthulhu)
+                    else if (y >= 25 && y <= 35 && dist < 5) {
+                        const glow = 150 + Math.sin(Date.now() * 0.005) * 50;
+                        spriteTextures[1][y][x] = [glow * 0.3, glow, glow * 0.5, 255];
+                    }
+                    else {
+                        spriteTextures[1][y][x] = [0, 0, 0, 0];
+                    }
+                }
+            }
+            
+            // Sprite 2: Columna de piedra
+            spriteTextures[2] = [];
+            for (let y = 0; y < TEX_HEIGHT; y++) {
+                spriteTextures[2][y] = [];
+                for (let x = 0; x < TEX_WIDTH; x++) {
+                    const centerX = 32;
+                    const dist = Math.abs(x - centerX);
+                    
+                    if (dist < 10 && y > 5 && y < 60) {
+                        const shade = 50 + Math.random() * 25;
+                        const edge = dist > 8 ? 20 : 0;
+                        spriteTextures[2][y][x] = [shade - edge, shade - edge, shade - edge + 5, 255];
+                    } else {
+                        spriteTextures[2][y][x] = [0, 0, 0, 0];
+                    }
+                }
+            }
+            
+            return spriteTextures;
+        }
+        
+        const spriteTextures = generateSpriteTextures();
+        
+        // ============================================
+        // INPUT
+        // ============================================
+        
+        const keys = {};
+        let mouseX = 0;
+        let lastMouseX = 0;
+        let isPointerLocked = false;
+        
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            
+            // Cambiar arma
+            if (e.code >= 'Digit1' && e.code <= 'Digit4') {
+                const weaponIndex = parseInt(e.code.slice(-1)) - 1;
+                if (weaponIndex < weapons.length) {
+                    player.weapon = weaponIndex;
+                    updateHUD();
+                }
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+        
+        canvas.addEventListener('click', () => {
+            if (!isPointerLocked) {
+                canvas.requestPointerLock();
+            } else {
+                shoot();
+            }
+        });
+        
+        document.addEventListener('pointerlockchange', () => {
+            isPointerLocked = document.pointerLockElement === canvas;
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (isPointerLocked) {
+                const rotSpeed = 0.002;
+                const deltaX = e.movementX * rotSpeed;
+                
+                const oldDirX = player.dirX;
+                player.dirX = player.dirX * Math.cos(-deltaX) - player.dirY * Math.sin(-deltaX);
+                player.dirY = oldDirX * Math.sin(-deltaX) + player.dirY * Math.cos(-deltaX);
+                
+                const oldPlaneX = player.planeX;
+                player.planeX = player.planeX * Math.cos(-deltaX) - player.planeY * Math.sin(-deltaX);
+                player.planeY = oldPlaneX * Math.sin(-deltaX) + player.planeY * Math.cos(-deltaX);
+            }
+        });
+        
+        // ============================================
+        // LÓGICA DEL JUEGO
+        // ============================================
+        
+        let lastShotTime = 0;
+        let muzzleFlash = 0;
+        
+        function shoot() {
+            const now = Date.now();
+            const weapon = weapons[player.weapon];
+            
+            if (now - lastShotTime < weapon.rate) return;
+            lastShotTime = now;
+            
+            // Efecto de disparo
+            muzzleFlash = 3;
+            
+            // Raycast para hit detection
+            const rayDirX = player.dirX + (Math.random() - 0.5) * weapon.spread;
+            const rayDirY = player.dirY + (Math.random() - 0.5) * weapon.spread;
+            
+            // Verificar hit en sprites
+            let closestDist = Infinity;
+            let hitSprite = null;
+            
+            for (let sprite of sprites) {
+                if (sprite.type !== 'enemy' || sprite.health <= 0) continue;
+                
+                const spriteX = sprite.x - player.x;
+                const spriteY = sprite.y - player.y;
+                
+                const invDet = 1.0 / (player.planeX * player.dirY - player.dirX * player.planeY);
+                const transformX = invDet * (player.dirY * spriteX - player.dirX * spriteY);
+                const transformY = invDet * (-player.planeY * spriteX + player.planeX * spriteY);
+                
+                if (transformY > 0 && Math.abs(transformX) < 0.5 && transformY < closestDist) {
+                    closestDist = transformY;
+                    hitSprite = sprite;
+                }
+            }
+            
+            if (hitSprite) {
+                hitSprite.health -= weapon.damage;
+                if (hitSprite.health <= 0) {
+                    // Efecto de muerte
+                    console.log('Enemigo eliminado');
+                }
+            }
+            
+            // Actualizar HUD
+            if (weapon.ammo !== "∞") {
+                player.ammo = Math.max(0, player.ammo - 1);
+            }
+            updateHUD();
+        }
+        
+        function updateHUD() {
+            document.getElementById('health').textContent = player.health;
+            document.getElementById('armor').textContent = `ARMOR: ${player.armor}`;
+            document.getElementById('ammo').textContent = `${player.ammo} / ${weapons[player.weapon].ammo}`;
+            document.getElementById('weaponName').textContent = weapons[player.weapon].name;
+        }
+        
+        function movePlayer() {
+            // Movimiento WASD
+            let moveX = 0;
+            let moveY = 0;
+            
+            if (keys['KeyW']) {
+                moveX += player.dirX * player.moveSpeed;
+                moveY += player.dirY * player.moveSpeed;
+            }
+            if (keys['KeyS']) {
+                moveX -= player.dirX * player.moveSpeed;
+                moveY -= player.dirY * player.moveSpeed;
+            }
+            if (keys['KeyA']) {
+                moveX -= player.dirY * player.moveSpeed;
+                moveY += player.dirX * player.moveSpeed;
+            }
+            if (keys['KeyD']) {
+                moveX += player.dirY * player.moveSpeed;
+                moveY -= player.dirX * player.moveSpeed;
+            }
+            
+            // Colisión con paredes
+            const newX = player.x + moveX;
+            const newY = player.y + moveY;
+            
+            if (worldMap[Math.floor(newY)][Math.floor(newX)] === 0) {
+                player.x = newX;
+                player.y = newY;
+            } else if (worldMap[Math.floor(player.y)][Math.floor(newX)] === 0) {
+                player.x = newX;
+            } else if (worldMap[Math.floor(newY)][Math.floor(player.x)] === 0) {
+                player.y = newY;
+            }
+        }
+        
+        // ============================================
+        // RENDERIZADO
+        // ============================================
+        
+        function render() {
+            // Limpiar buffer
+            rctx.fillStyle = '#000';
+            rctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+            
+            // Cielo (gradiente oscuro Lovecraftiano)
+            const skyGradient = rctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT / 2);
+            skyGradient.addColorStop(0, '#0a0510');
+            skyGradient.addColorStop(0.5, '#150a20');
+            skyGradient.addColorStop(1, '#1a0f2a');
+            rctx.fillStyle = skyGradient;
+            rctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
+            
+            // Suelo
+            const floorGradient = rctx.createLinearGradient(0, SCREEN_HEIGHT / 2, 0, SCREEN_HEIGHT);
+            floorGradient.addColorStop(0, '#1a1510');
+            floorGradient.addColorStop(1, '#0a0805');
+            rctx.fillStyle = floorGradient;
+            rctx.fillRect(0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
+            
+            // Raycasting
+            const zBuffer = [];
+            
+            for (let x = 0; x < SCREEN_WIDTH; x++) {
+                const cameraX = 2 * x / SCREEN_WIDTH - 1;
+                const rayDirX = player.dirX + player.planeX * cameraX;
+                const rayDirY = player.dirY + player.planeY * cameraX;
+                
+                let mapX = Math.floor(player.x);
+                let mapY = Math.floor(player.y);
+                
+                const deltaDistX = Math.abs(1 / rayDirX);
+                const deltaDistY = Math.abs(1 / rayDirY);
+                
+                let stepX, stepY;
+                let sideDistX, sideDistY;
+                
+                if (rayDirX < 0) {
+                    stepX = -1;
+                    sideDistX = (player.x - mapX) * deltaDistX;
+                } else {
+                    stepX = 1;
+                    sideDistX = (mapX + 1.0 - player.x) * deltaDistX;
+                }
+                
+                if (rayDirY < 0) {
+                    stepY = -1;
+                    sideDistY = (player.y - mapY) * deltaDistY;
+                } else {
+                    stepY = 1;
+                    sideDistY = (mapY + 1.0 - player.y) * deltaDistY;
+                }
+                
+                let hit = 0;
+                let side = 0;
+                
+                while (hit === 0) {
+                    if (sideDistX < sideDistY) {
+                        sideDistX += deltaDistX;
+                        mapX += stepX;
+                        side = 0;
+                    } else {
+                        sideDistY += deltaDistY;
+                        mapY += stepY;
+                        side = 1;
+                    }
+                    
+                    if (worldMap[mapY][mapX] > 0) hit = 1;
+                }
+                
+                let perpWallDist;
+                if (side === 0) {
+                    perpWallDist = (mapX - player.x + (1 - stepX) / 2) / rayDirX;
+                } else {
+                    perpWallDist = (mapY - player.y + (1 - stepY) / 2) / rayDirY;
+                }
+                
+                zBuffer[x] = perpWallDist;
+                
+                const lineHeight = Math.floor(SCREEN_HEIGHT / perpWallDist);
+                const drawStart = Math.max(0, Math.floor(-lineHeight / 2 + SCREEN_HEIGHT / 2));
+                const drawEnd = Math.min(SCREEN_HEIGHT - 1, Math.floor(lineHeight / 2 + SCREEN_HEIGHT / 2));
+                
+                // Textura de la pared
+                const texNum = worldMap[mapY][mapX];
+                let wallX;
+                if (side === 0) {
+                    wallX = player.y + perpWallDist * rayDirY;
+                } else {
+                    wallX = player.x + perpWallDist * rayDirX;
+                }
+                wallX -= Math.floor(wallX);
+                
+                let texX = Math.floor(wallX * TEX_WIDTH);
+                if (side === 0 && rayDirX > 0) texX = TEX_WIDTH - texX - 1;
+                if (side === 1 && rayDirY < 0) texX = TEX_WIDTH - texX - 1;
+                
+                // Dibujar columna de pared
+                for (let y = drawStart; y < drawEnd; y++) {
+                    const d = y * 256 - SCREEN_HEIGHT * 128 + lineHeight * 128;
+                    const texY = Math.floor(((d * TEX_HEIGHT) / lineHeight) / 256);
+                    
+                    if (texY >= 0 && texY < TEX_HEIGHT && texX >= 0 && texX < TEX_WIDTH) {
+                        const color = textures[texNum][texY][texX];
+                        
+                        // Sombreado por distancia y lado
+                        let shade = 1.0 - Math.min(1.0, perpWallDist / 15);
+                        if (side === 1) shade *= 0.7;
+                        
+                        // Efecto de "corrupción" en textura 4
+                        let r = color[0] * shade;
+                        let g = color[1] * shade;
+                        let b = color[2] * shade;
+                        
+                        if (texNum === 4) {
+                            const pulse = Math.sin(Date.now() * 0.003 + x * 0.1) * 0.3 + 0.7;
+                            g *= pulse;
+                            b *= pulse;
+                        }
+                        
+                        rctx.fillStyle = `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
+                        rctx.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+            
+            // Renderizar sprites
+            const spriteOrder = [];
+            const spriteDistance = [];
+            
+            for (let i = 0; i < sprites.length; i++) {
+                spriteOrder[i] = i;
+                spriteDistance[i] = ((player.x - sprites[i].x) * (player.x - sprites[i].x) + 
+                                    (player.y - sprites[i].y) * (player.y - sprites[i].y));
+            }
+            
+            // Ordenar sprites por distancia (bubble sort para simplicidad)
+            for (let i = 0; i < sprites.length; i++) {
+                for (let j = 0; j < sprites.length - 1 - i; j++) {
+                    if (spriteDistance[j] < spriteDistance[j + 1]) {
+                        [spriteOrder[j], spriteOrder[j + 1]] = [spriteOrder[j + 1], spriteOrder[j]];
+                        [spriteDistance[j], spriteDistance[j + 1]] = [spriteDistance[j + 1], spriteDistance[j]];
+                    }
+                }
+            }
+            
+            for (let i = 0; i < sprites.length; i++) {
+                const sprite = sprites[spriteOrder[i]];
+                if (sprite.health !== undefined && sprite.health <= 0) continue;
+                
+                const spriteX = sprite.x - player.x;
+                const spriteY = sprite.y - player.y;
+                
+                const invDet = 1.0 / (player.planeX * player.dirY - player.dirX * player.planeY);
+                const transformX = invDet * (player.dirY * spriteX - player.dirX * spriteY);
+                const transformY = invDet * (-player.planeY * spriteX + player.planeX * spriteY);
+                
+                if (transformY <= 0) continue;
+                
+                const spriteScreenX = Math.floor((SCREEN_WIDTH / 2) * (1 + transformX / transformY));
+                const spriteHeight = Math.abs(Math.floor(SCREEN_HEIGHT / transformY));
+                const drawStartY = Math.max(0, Math.floor(-spriteHeight / 2 + SCREEN_HEIGHT / 2));
+                const drawEndY = Math.min(SCREEN_HEIGHT - 1, Math.floor(spriteHeight / 2 + SCREEN_HEIGHT / 2));
+                const spriteWidth = Math.abs(Math.floor(SCREEN_HEIGHT / transformY));
+                const drawStartX = Math.max(0, Math.floor(-spriteWidth / 2 + spriteScreenX));
+                const drawEndX = Math.min(SCREEN_WIDTH - 1, Math.floor(spriteWidth / 2 + spriteScreenX));
+                
+                const tex = spriteTextures[sprite.texture];
+                
+                for (let stripe = drawStartX; stripe < drawEndX; stripe++) {
+                    const texX = Math.floor((stripe - (-spriteWidth / 2 + spriteScreenX)) * TEX_WIDTH / spriteWidth);
+                    
+                    if (transformY > 0 && stripe > 0 && stripe < SCREEN_WIDTH && transformY < zBuffer[stripe]) {
+                        for (let y = drawStartY; y < drawEndY; y++) {
+                            const d = (y) * 256 - SCREEN_HEIGHT * 128 + spriteHeight * 128;
+                            const texY = Math.floor(((d * TEX_HEIGHT) / spriteHeight) / 256);
+                            
+                            if (texY >= 0 && texY < TEX_HEIGHT && texX >= 0 && texX < TEX_WIDTH) {
+                                const color = tex[texY][texX];
+                                if (color[3] > 0) {
+                                    const shade = Math.max(0.3, 1.0 - transformY / 12);
+                                    rctx.fillStyle = `rgba(${Math.floor(color[0] * shade)},${Math.floor(color[1] * shade)},${Math.floor(color[2] * shade)},${color[3] / 255})`;
+                                    rctx.fillRect(stripe, y, 1, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Muzzle flash
+            if (muzzleFlash > 0) {
+                rctx.fillStyle = `rgba(255, 200, 100, ${muzzleFlash * 0.15})`;
+                rctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+                muzzleFlash--;
+            }
+            
+            // Escalar y dibujar en canvas principal
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(renderBuffer, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, canvas.width, canvas.height);
+        }
+        
+        // ============================================
+        // GAME LOOP
+        // ============================================
+        
+        function gameLoop() {
+            movePlayer();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Iniciar
+        updateHUD();
+        gameLoop();
+    </script>
+</body>
+</html>

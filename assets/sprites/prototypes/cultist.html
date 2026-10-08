@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprite Prototype — Cultista</title>
+    <style>
+        body {
+            background: #1a1a22;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: monospace;
+            color: #c9a227;
+        }
+        .container {
+            text-align: center;
+        }
+        canvas {
+            border: 2px solid #4a4a52;
+            image-rendering: pixelated;
+            background: #0a0a0f;
+        }
+        .info {
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .controls {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #5a5a62;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>CULTISTA — Ciclo de Animación</h2>
+        <canvas id="spriteCanvas" width="256" height="256"></canvas>
+        <div class="info">
+            <strong>Animaciones:</strong> Idle → Alerta → Disparar → Morir<br>
+            <strong>Paleta:</strong> Púrpura oscuro, verde espectral, negro<br>
+            <strong>Tamaño:</strong> 64x64 (escalado 4x)
+        </div>
+        <div class="controls">
+            Click para cambiar animación | ESPACIO para pausar
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('spriteCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Configuración
+        const FRAME_SIZE = 64;
+        const SCALE = 4;
+        const FPS = 8;
+        
+        // Estados de animación
+        const ANIMATIONS = {
+            IDLE: { frames: 4, speed: 4, loop: true },
+            ALERT: { frames: 2, speed: 2, loop: false },
+            SHOOT: { frames: 3, speed: 3, loop: false },
+            DIE: { frames: 5, speed: 5, loop: false }
+        };
+        
+        let currentAnim = 'IDLE';
+        let currentFrame = 0;
+        let frameTimer = 0;
+        let isPlaying = true;
+        let animationOrder = ['IDLE', 'ALERT', 'SHOOT', 'DIE'];
+        let animIndex = 0;
+        
+        // Paleta de colores
+        const PALETTE = {
+            transparent: null,
+            robeDark: '#2a1a3a',
+            robeMid: '#3a2a4a',
+            robeLight: '#4a3a5a',
+            skin: '#8a7a6a',
+            eyes: '#00ff88',
+            hood: '#1a0a2a',
+            blood: '#8b0000'
+        };
+        
+        // Generar frame del cultista
+        function drawCultistFrame(ctx, x, y, frame, animType) {
+            const px = (dx, dy, color) => {
+                if (color) {
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x + dx * SCALE, y + dy * SCALE, SCALE, SCALE);
+                }
+            };
+            
+            // Base: cuerpo con túnica
+            const bodyOffset = Math.sin(frame * 0.5) * 2; // Respiración
+            
+            // Capucha
+            for (let i = 0; i < 16; i++) {
+                for (let j = 0; j < 12; j++) {
+                    const dist = Math.abs(i - 8);
+                    if (dist < 6 - j * 0.3) {
+                        px(i + 24, j + 8 + bodyOffset, PALETTE.hood);
+                    }
+                }
+            }
+            
+            // Cara (oscura, solo ojos)
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 6; j++) {
+                    px(i + 28, j + 14 + bodyOffset, PALETTE.skin);
+                }
+            }
+            
+            // Ojos brillantes (efecto de brillo según frame)
+            const eyeGlow = animType === 'ALERT' || animType === 'SHOOT' ? 1 : 0.5 + Math.sin(frame * 0.8) * 0.3;
+            const eyeColor = `rgba(0, 255, 136, ${eyeGlow})`;
+            
+            // Ojo izquierdo
+            px(30, 16 + bodyOffset, eyeColor);
+            px(31, 16 + bodyOffset, eyeColor);
+            // Ojo derecho
+            px(34, 16 + bodyOffset, eyeColor);
+            px(35, 16 + bodyOffset, eyeColor);
+            
+            // Cuerpo/túnica
+            for (let i = 0; i < 24; i++) {
+                for (let j = 0; j < 32; j++) {
+                    const centerX = 32;
+                    const dist = Math.abs(i - 12);
+                    const width = 8 - j * 0.15;
+                    
+                    if (dist < width) {
+                        let color = PALETTE.robeMid;
+                        
+                        // Sombreado
+                        if (dist > width - 2) color = PALETTE.robeDark;
+                        if (dist < 2) color = PALETTE.robeLight;
+                        
+                        // Efecto de viento/movimiento
+                        if (animType === 'DIE' && frame > 2) {
+                            // Desvanecimiento
+                            if (Math.random() > 0.3) continue;
+                        }
+                        
+                        px(i + 20, j + 24 + bodyOffset, color);
+                    }
+                }
+            }
+            
+            // Brazos según animación
+            if (animType === 'SHOOT' && frame >= 1) {
+                // Brazo extendido disparando
+                for (let i = 0; i < 12; i++) {
+                    for (let j = 0; j < 4; j++) {
+                        px(i + 44, j + 28 + bodyOffset, PALETTE.robeMid);
+                    }
+                }
+                // Arma
+                px(52, 29 + bodyOffset, '#4a4a4a');
+                px(53, 29 + bodyOffset, '#6a6a6a');
+                
+                // Muzzle flash en frame 2
+                if (frame === 2) {
+                    px(54, 28 + bodyOffset, '#ffff00');
+                    px(55, 29 + bodyOffset, '#ff8800');
+                    px(54, 30 + bodyOffset, '#ffff00');
+                }
+            } else if (animType === 'DIE') {
+                // Caída
+                const fallOffset = frame * 4;
+                // Ajustar posición para caída
+                ctx.save();
+                ctx.translate(0, fallOffset);
+                ctx.restore();
+            } else {
+                // Brazos en reposo
+                for (let i = 0; i < 6; i++) {
+                    for (let j = 0; j < 12; j++) {
+                        // Brazo izquierdo
+                        px(18 - i * 0.5, 28 + j + bodyOffset, PALETTE.robeDark);
+                        // Brazo derecho
+                        px(42 + i * 0.5, 28 + j + bodyOffset, PALETTE.robeDark);
+                    }
+                }
+            }
+            
+            // Efecto de sangre en muerte
+            if (animType === 'DIE' && frame >= 2) {
+                for (let i = 0; i < 8; i++) {
+                    const bx = 28 + Math.random() * 8;
+                    const by = 40 + Math.random() * 8;
+                    px(bx, by, PALETTE.blood);
+                }
+            }
+        }
+        
+        // Loop de animación
+        function animate() {
+            if (!isPlaying) {
+                requestAnimationFrame(animate);
+                return;
+            }
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const anim = ANIMATIONS[currentAnim];
+            
+            // Dibujar frame actual
+            drawCultistFrame(ctx, 0, 0, currentFrame, currentAnim);
+            
+            // Actualizar frame
+            frameTimer++;
+            if (frameTimer >= anim.speed) {
+                frameTimer = 0;
+                currentFrame++;
+                
+                if (currentFrame >= anim.frames) {
+                    if (anim.loop) {
+                        currentFrame = 0;
+                    } else {
+                        // Volver a idle después de animación no-loop
+                        currentAnim = 'IDLE';
+                        currentFrame = 0;
+                    }
+                }
+            }
+            
+            // Mostrar info de animación
+            ctx.fillStyle = '#c9a227';
+            ctx.font = '12px monospace';
+            ctx.fillText(`Anim: ${currentAnim}`, 10, 20);
+            ctx.fillText(`Frame: ${currentFrame + 1}/${anim.frames}`, 10, 35);
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Controles
+        canvas.addEventListener('click', () => {
+            animIndex = (animIndex + 1) % animationOrder.length;
+            currentAnim = animationOrder[animIndex];
+            currentFrame = 0;
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                isPlaying = !isPlaying;
+            }
+        });
+        
+        // Iniciar
+        animate();
+    </script>
+</body>
+</html>
