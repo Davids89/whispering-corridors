@@ -36,8 +36,14 @@ var level_map: Array = [
 @onready var raycast_renderer: RaycastRenderer = $RaycastRenderer
 @onready var player: Player = $Player
 
+# Escenas
+var enemy_scene = preload("res://scenes/enemies/Enemy.tscn")
+
 func _ready() -> void:
 	print("TestLevel inicializado")
+	
+	# Configurar grupos
+	_setup_groups()
 	
 	# Configurar el renderer con el mapa
 	if raycast_renderer:
@@ -55,8 +61,35 @@ func _ready() -> void:
 			raycast_renderer.set_player(player)
 			print("Jugador asignado al renderer")
 	
+	# Spawnear enemigos de prueba
+	_spawn_test_enemies()
+	
 	# Capturar mouse
 	InputManager.capture_mouse()
+
+func _setup_groups() -> void:
+	"""Configura los grupos para búsqueda de referencias"""
+	if player:
+		player.add_to_group("player")
+	if raycast_renderer:
+		raycast_renderer.add_to_group("raycast_renderer")
+
+func _spawn_test_enemies() -> void:
+	"""Spawnea enemigos de prueba en el nivel"""
+	var spawn_points = [
+		Vector2(8, 8),
+		Vector2(16, 8),
+		Vector2(8, 16),
+		Vector2(16, 16),
+		Vector2(20, 12)
+	]
+	
+	for i, pos in enumerate(spawn_points):
+		var enemy = enemy_scene.instantiate()
+		enemy.global_position = pos
+		enemy.enemy_name = "Cultista_" + str(i + 1)
+		add_child(enemy)
+		print("Enemigo spawneado en: ", pos)
 
 func _input(event: InputEvent) -> void:
 	# ESC para liberar mouse
